@@ -7,11 +7,11 @@
 
 // setup size of map in pixels
 var width = 960,
-    height = 500;
+    height = 600;
 
 // setup the map type and the best layout
 var projection = d3.geo.orthographic()
-	.scale(650)
+	.scale(850)
 	.rotate([-40,-85])
     .clipAngle(60);
 
@@ -61,6 +61,21 @@ d3.json("trackerdata.json", function(error, positions) {
        })		
        .attr("r", 5)
        .style("fill", "red");
+	   
+	svg.selectAll("text")
+		.data(positions)
+		.enter()
+		.append("text")
+		 .attr("x", function(d) { 
+               return projection([d.lon, d.lat])[0];
+       })		 
+         .attr("y", function(d) {  
+               return projection([d.lon, d.lat])[1];
+       })		
+         .text( function (d) { return d.at; })
+         .attr("font-family", "sans-serif")
+         .attr("font-size", "12px")
+         .attr("fill", "green");
 });
 
 
