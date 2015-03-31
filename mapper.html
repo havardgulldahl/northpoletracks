@@ -1,5 +1,28 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
+<head>
+	<meta charset="utf-8">
+	<style>
+
+	.graticule {
+	  fill: none;
+	  stroke: #777;
+	  stroke-opacity: .5;
+	  stroke-width: .5px;
+	}
+
+	.land {
+	  fill: #999;
+	}
+
+	.boundary {
+	  fill: none;
+	  stroke: #fff;
+	  stroke-width: .5px;
+	}
+
+
+	</style>
+</head>
 <body>
 <script src="d3.v3.min.js"></script>
 <script src="topojson.v1.min.js"></script>
@@ -39,6 +62,13 @@ svg.on("xmousemove", function() {
   svg.selectAll("path").attr("d", path);
 });
 
+// add graticule (grid lines)
+var graticule = d3.geo.graticule();
+svg.append("path")
+    .datum(graticule)
+    .attr("class", "graticule")
+    .attr("d", path);
+
 // add map data
 d3.json("world.json", function(error, world) {
   svg.append("path")
@@ -47,7 +77,7 @@ d3.json("world.json", function(error, world) {
       .attr("d", path);
 });
 
-// load and display the tracker positions
+// add the tracker positions
 d3.json("trackerdata.json", function(error, positions) {
 	svg.selectAll("circle")
 		.data(positions)
