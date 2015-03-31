@@ -32,7 +32,7 @@ svg.on("mousemove", function() {
   svg.selectAll("path").attr("d", path);
 });
 
-d3.json("/d/4090846/world-110m.json", function(error, world) {
+d3.json("world.json", function(error, world) {
   svg.append("path")
       .datum(topojson.feature(world, world.objects.land))
       .attr("class", "land")
