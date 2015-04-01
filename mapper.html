@@ -13,6 +13,15 @@
 	.land {
 	  fill: #999;
 	}
+	
+	.seaice {
+	  fill: lightblue;
+	  opacity: .7;
+	  stroke: blue;
+	  stroke-opacity: .5;
+	  stroke-width: .5px;
+	
+	}
 
 	.boundary {
 	  fill: none;
@@ -34,7 +43,7 @@ var width = 960,
 
 // setup the map type and the best layout
 var projection = d3.geo.orthographic()
-	.scale(850)
+	.scale(550)
 	.rotate([-40,-85])
     .clipAngle(60);
 
@@ -76,6 +85,26 @@ d3.json("world.json", function(error, world) {
       .attr("class", "land")
       .attr("d", path);
 });
+
+/*
+// add ice data
+d3.json("extent_N_201502_polygon.topo.json", function(error, seaice) {
+  svg.append("path")
+      .datum(topojson.feature(seaice, seaice.objects.extent_N_201502_polygon))
+      .attr("class", "seaice")
+      .attr("d", path);
+});
+*/
+
+// add ice data
+d3.json("extent_N_201502_polygon.geo.json", function(error, seaice) {
+svg.selectAll("path")
+    .data(seaice.features)
+  .enter().append("path")
+    .attr("class", "seaice")
+    .attr("d", path);
+});
+
 
 // add the tracker positions
 d3.json("trackerdata.json", function(error, positions) {
