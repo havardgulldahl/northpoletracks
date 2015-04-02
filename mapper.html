@@ -4,20 +4,20 @@
 	<style>
 
 	.graticule {
-	  fill: none;
+	  fill: #fcfcfc;
+	  stroke-width: 0.2;
 	  stroke: #777;
-	  stroke-opacity: .5;
-	  stroke-width: .5px;
 	}
 
 	.land {
-	  fill: #999;
+	  fill: #a6611a;
+	  opacity: .3;
 	}
 	
 	.seaice {
-	  fill: lightblue;
-	  opacity: .7;
-	  stroke: blue;
+	  fill: #80cdc1;
+	  opacity: .3;
+	  stroke: #018571;
 	  stroke-opacity: .5;
 	  stroke-width: .5px;
 	
@@ -25,25 +25,39 @@
 
 	.boundary {
 	  fill: none;
-	  stroke: #fff;
+	  stroke: #f5f5f5;
 	  stroke-width: .5px;
 	}
 
+	.tracker-point {
+	  fill: #a6611a;
+	  opacity: 0.9;
+	}
 
+	.tracker-point:hover {
+	  opacity: 0.3;
+	}
+
+	.tracker-text {
+	  font-family: sans-serif;
+	  font-size: x-small;
+	  fill: #a6611a;
+	  opacity: 0.6;
+	}
 	</style>
 </head>
 <body>
 <script src="d3.v3.min.js"></script>
 <script src="topojson.v1.min.js"></script>
-<script>
+<script type="text/javascript">
 
 // setup size of map in pixels
 var width = 960,
     height = 600;
 
 // setup the map type and the best layout
-var projection = d3.geo.orthographic()
-	.scale(550)
+var projection = d3.geo.stereographic()
+	.scale(850)
 	.rotate([-40,-85])
     .clipAngle(60);
 
@@ -63,13 +77,6 @@ var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-//what to do on mouse activity
-svg.on("xmousemove", function() {
-  var p = d3.mouse(this);
-  console.log([λ(p[0]), φ(p[1])]);
-  //projection.rotate([λ(p[0]), φ(p[1])]);
-  svg.selectAll("path").attr("d", path);
-});
 
 // add graticule (grid lines)
 var graticule = d3.geo.graticule();
@@ -77,6 +84,16 @@ svg.append("path")
     .datum(graticule)
     .attr("class", "graticule")
     .attr("d", path);
+	
+	
+//what to do on mouse activity
+svg.on("xmousemove", function() {
+  var p = d3.mouse(this);
+  //console.log([λ(p[0]), φ(p[1])]);
+  //projection.rotate([λ(p[0]), φ(p[1])]);
+  //svg.selectAll("path").attr("d", path);
+});
+
 
 // add map data
 d3.json("world.json", function(error, world) {
@@ -86,25 +103,13 @@ d3.json("world.json", function(error, world) {
       .attr("d", path);
 });
 
-/*
-// add ice data
-d3.json("extent_N_201502_polygon.topo.json", function(error, seaice) {
-  svg.append("path")
-      .datum(topojson.feature(seaice, seaice.objects.extent_N_201502_polygon))
-      .attr("class", "seaice")
-      .attr("d", path);
-});
-*/
-
 // add ice data
 d3.json("extent_N_201502_polygon.geo.json", function(error, seaice) {
-svg.selectAll("path")
-    .data(seaice.features)
-  .enter().append("path")
-    .attr("class", "seaice")
+svg.append("path")
+    .datum(seaice)
+	.attr("class", "seaice")
     .attr("d", path);
 });
-
 
 // add the tracker positions
 d3.json("trackerdata.json", function(error, positions) {
@@ -119,7 +124,7 @@ d3.json("trackerdata.json", function(error, positions) {
                return projection([d.lon, d.lat])[1];
        })		
        .attr("r", 5)
-       .style("fill", "red");
+       .attr("class", "tracker-point");
 	   
 	svg.selectAll("text")
 		.data(positions)
@@ -131,10 +136,8 @@ d3.json("trackerdata.json", function(error, positions) {
          .attr("y", function(d) {  
                return projection([d.lon, d.lat])[1];
        })		
-         .text( function (d) { return d.at; })
-         .attr("font-family", "sans-serif")
-         .attr("font-size", "12px")
-         .attr("fill", "green");
+         .text( function (d) { console.log(d); return d.at; })
+         .attr("class", "tracker-text");
 });
 
 
