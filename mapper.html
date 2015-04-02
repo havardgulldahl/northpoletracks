@@ -45,6 +45,7 @@
 	  opacity: 0.6;
 	}
 	</style>
+	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
 </head>
 <body>
 <script src="d3.v3.min.js"></script>
@@ -57,7 +58,7 @@ var width = 960,
 
 // setup the map type and the best layout
 var projection = d3.geo.stereographic()
-	.scale(850)
+	.scale(2000)
 	.rotate([-40,-85])
     .clipAngle(60);
 
@@ -111,8 +112,30 @@ svg.append("path")
     .attr("d", path);
 });
 
+// add points of interest
+
+var poiData = [
+  { "lat": 90, "lon": 0, "title": "Nordpolen", "icon": "\uf024"},
+  { "lat": 88.5, "lon": 60, "title": "Barneo", "icon": "\uf072"}
+];
+
+svg.selectAll("text")
+    .data(poiData)
+    .enter()
+    .append("text")
+    .attr("x", function (d) { return projection([d.lon, d.lat])[0]; })
+    .attr("y", function (d) { return projection([d.lon, d.lat])[1]; })
+	 .text( function (d) { return d.icon; })
+	 .attr('font-family', 'FontAwesome')
+	 .attr("class", "poi");
+
 // add the tracker positions
 d3.json("trackerdata.json", function(error, positions) {
+	function fmtdate(timestamp) {
+		var d = new Date(timestamp);
+		var mnth = ['jan', 'feb', 'mars', 'april', 'mai', 'juni', 'juli', 'aug', 'sept', 'okt', 'nov', 'des'];
+		return d.getDate() + '. ' + mnth[d.getMonth()] + ', ca. kl ' + d.getHours();
+	};
 	svg.selectAll("circle")
 		.data(positions)
 		.enter()
@@ -136,7 +159,7 @@ d3.json("trackerdata.json", function(error, positions) {
          .attr("y", function(d) {  
                return projection([d.lon, d.lat])[1];
        })		
-         .text( function (d) { console.log(d); return d.at; })
+         .text( function (d) { return fmtdate(d.at) + ": " + d.temp + "°" })
          .attr("class", "tracker-text");
 });
 
