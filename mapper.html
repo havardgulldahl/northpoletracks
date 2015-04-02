@@ -44,12 +44,25 @@
 	  fill: #a6611a;
 	  opacity: 0.6;
 	}
+	
+	.tooltip{ 
+		background-color:rgba(68,136,187,0.5);
+          margin: 10px;
+          height: 50px;
+          width: 150px;
+          padding-left: 10px; 
+          padding-top: 10px;
+		border-radius:10px;
+		font-size: x-small;
+		font-family: sans-serif;
+	}
 	</style>
 	<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
 </head>
 <body>
 <script src="d3.v3.min.js"></script>
 <script src="topojson.v1.min.js"></script>
+<script src="tooltip.js"></script>
 <script type="text/javascript">
 
 // setup size of map in pixels
@@ -115,8 +128,8 @@ svg.append("path")
 // add points of interest
 
 var poiData = [
-  { "lat": 90, "lon": 0, "title": "Nordpolen", "icon": "\uf024"},
-  { "lat": 88.5, "lon": 60, "title": "Barneo", "icon": "\uf072"}
+  { "lat": 90, "lon": 0, "fa": false, "text": "Nordpolen", "icon": "\uf024"},
+  { "lat": 88.5, "lon": 60, "fa": true, "text": "Barneo", "icon": "\uf072"},
 ];
 
 svg.selectAll("text")
@@ -125,8 +138,8 @@ svg.selectAll("text")
     .append("text")
     .attr("x", function (d) { return projection([d.lon, d.lat])[0]; })
     .attr("y", function (d) { return projection([d.lon, d.lat])[1]; })
-	 .text( function (d) { return d.icon; })
-	 .attr('font-family', 'FontAwesome')
+	 .text( function (d) { return (d.fa) ? d.icon : d.text; })
+	 .attr('font-family', function (d) { return (d.fa) ? "FontAwesome" : "sans-serif"; })
 	 .attr("class", "poi");
 
 // add the tracker positions
@@ -134,8 +147,9 @@ d3.json("trackerdata.json", function(error, positions) {
 	function fmtdate(timestamp) {
 		var d = new Date(timestamp);
 		var mnth = ['jan', 'feb', 'mars', 'april', 'mai', 'juni', 'juli', 'aug', 'sept', 'okt', 'nov', 'des'];
-		return d.getDate() + '. ' + mnth[d.getMonth()] + ', ca. kl ' + d.getHours();
+		return d.getDate() + '. ' + mnth[d.getMonth()] + ' kl ' + d.getHours();
 	};
+	var labelxy = [];
 	svg.selectAll("circle")
 		.data(positions)
 		.enter()
@@ -147,7 +161,16 @@ d3.json("trackerdata.json", function(error, positions) {
                return projection([d.lon, d.lat])[1];
        })		
        .attr("r", 5)
-       .attr("class", "tracker-point");
+       .attr("class", "tracker-point")
+	   .call(d3.helper.tooltip(
+        function(d, i){
+		  //console.log(d);
+		  var days = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+          return "<div><b>"+days[new Date(d.at).getDay()] + 
+			"</b><br><i class='fa fa-empire'></i> "+d.temp+ // temperature
+			"°C | <i class='fa fa-tachometer'></i> "+d.sog+  // speed over ground = speed
+			"m/s | <i class='fa fa-compass'></i> "+d.cog+"</div>"; // course over ground
+        }));
 	   
 	svg.selectAll("text")
 		.data(positions)
@@ -155,7 +178,8 @@ d3.json("trackerdata.json", function(error, positions) {
 		.append("text")
 		 .attr("x", function(d) { 
                return projection([d.lon, d.lat])[0];
-       })		 
+       })		
+		 .attr("dx", "1em")
          .attr("y", function(d) {  
                return projection([d.lon, d.lat])[1];
        })		
@@ -177,5 +201,14 @@ d3.json("trackerdata.json", function(error, positions) {
          .attr("class", "tracker-text");
 });
 
+var zoom = d3.behavior.zoom()
+    .on("zoom",function() {
+        svg.attr("transform","translate("+ 
+            d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+        svg.selectAll("path")  
+            .attr("d", path.projection(projection)); 
+});
+
+svg.call(zoom);
 
 </script>
