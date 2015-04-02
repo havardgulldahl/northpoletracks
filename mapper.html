@@ -159,7 +159,21 @@ d3.json("trackerdata.json", function(error, positions) {
          .attr("y", function(d) {  
                return projection([d.lon, d.lat])[1];
        })		
-         .text( function (d) { return fmtdate(d.at) + ": " + d.temp + "°" })
+         .text( function (d) { return fmtdate(d.at);})
+		 .attr("visibility", function(d) {
+			var xy = projection([d.lon, d.lat]);
+			for(var _x,_y,i=0; i<labelxy.length;i++) {
+				_x = labelxy[i][0];
+				_y = labelxy[i][1];
+			// collision detection
+			if( (Math.abs(xy[0] - _x) < 10) || (Math.abs(xy[1] - _y) < 10) ) {
+					return 'hidden'; // too close to other labels
+				}
+			}
+			labelxy.push(xy); // add this to list of visible labels
+			return 'visible';
+			
+		 })
          .attr("class", "tracker-text");
 });
 
