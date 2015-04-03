@@ -33,9 +33,9 @@
 	  fill: #a6611a;
 	  opacity: 0.9;
 	}
-
-	.tracker-point:hover {
-	  opacity: 0.3;
+	
+	.custom-point {
+	  fill: red;
 	}
 
 	.tracker-text {
@@ -53,7 +53,7 @@
           padding-left: 10px; 
           padding-top: 10px;
 		border-radius:10px;
-		font-size: x-small;
+		font-size: small;
 		font-family: sans-serif;
 	}
 	</style>
@@ -62,6 +62,7 @@
 <body>
 <script src="d3.v3.min.js"></script>
 <script src="topojson.v1.min.js"></script>
+<script src="queue.v1.min.js"></script>
 <script src="tooltip.js"></script>
 <script type="text/javascript">
 
@@ -142,36 +143,59 @@ svg.selectAll("text")
 	 .attr('font-family', function (d) { return (d.fa) ? "FontAwesome" : "sans-serif"; })
 	 .attr("class", "poi");
 
-// add the tracker positions
-d3.json("trackerdata.json", function(error, positions) {
+// add live points to the map
+var trackerpoints = [];
+var custompoints = [];
+var dsv = d3.dsv(";", "text/plain");
+queue()
+    .defer(d3.json, 'trackerdata.json') // tracker points
+    .defer(dsv, 'poi.csv') // custom points
+    .await(asyncpointloader); // function that uses files	 
+
+function asyncpointloader(error, _trackerpoints, _custompoints) {
+	trackerpoints = _trackerpoints;
+	custompoints = _custompoints;
+	setup();
+}
+
+function setup() {
+	addpoints(trackerpoints, "tracker");
+	addpoints(custompoints, "custom");
+}
+	
+var addpoints = function(positions, origin) {
+	console.log("add %o : %o", origin, positions);
 	function fmtdate(timestamp) {
 		var d = new Date(timestamp);
 		var mnth = ['jan', 'feb', 'mars', 'april', 'mai', 'juni', 'juli', 'aug', 'sept', 'okt', 'nov', 'des'];
 		return d.getDate() + '. ' + mnth[d.getMonth()] + ' kl ' + d.getHours();
 	};
 	var labelxy = [];
-	svg.selectAll("circle")
+	var dots = svg.selectAll("circle")
 		.data(positions)
 		.enter()
 		.append("circle")
        .attr("cx", function(d) {
                return projection([d.lon, d.lat])[0];
        })
-       .attr("cy", function(d) {
+       .attr("cy", function(d) { 		  
                return projection([d.lon, d.lat])[1];
        })		
        .attr("r", 5)
-       .attr("class", "tracker-point")
+       .attr("class", origin+"-point")
+	   //.attr("visibility", function(d) { (d.source != "IRIDIUM")? "visible" : "hidden"; })
 	   .call(d3.helper.tooltip(
-        function(d, i){
-		  //console.log(d);
+		function(d, i){
+		  var _d = new Date(d.at);
 		  var days = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
-          return "<div><b>"+days[new Date(d.at).getDay()] + 
+		  return "<div><b>"+days[_d.getDay()] + " " + _d.getDate() + "/" + _d.getMonth() +
 			"</b><br><i class='fa fa-empire'></i> "+d.temp+ // temperature
-			"°C | <i class='fa fa-tachometer'></i> "+d.sog+  // speed over ground = speed
-			"m/s | <i class='fa fa-compass'></i> "+d.cog+"</div>"; // course over ground
-        }));
-	   
+			"°C <i class='fa fa-tachometer'></i> "+d.sog+"m/s"+  // speed over ground = speed
+			//"<i class='fa fa-compass'></i> "+d.cog+ // course over ground
+			"</div>";
+		}));
+	
+			
 	svg.selectAll("text")
 		.data(positions)
 		.enter()
@@ -183,8 +207,9 @@ d3.json("trackerdata.json", function(error, positions) {
          .attr("y", function(d) {  
                return projection([d.lon, d.lat])[1];
        })		
-         .text( function (d) { return fmtdate(d.at);})
+         .text( function (d) { return (d.at !== undefined) ? fmtdate(d.at) : d.text;})
 		 .attr("visibility", function(d) {
+			if(d.source == "IRIDIUM") { return "hidden"; } // we only want gps points
 			var xy = projection([d.lon, d.lat]);
 			for(var _x,_y,i=0; i<labelxy.length;i++) {
 				_x = labelxy[i][0];
@@ -199,16 +224,20 @@ d3.json("trackerdata.json", function(error, positions) {
 			
 		 })
          .attr("class", "tracker-text");
-});
+};
 
 var zoom = d3.behavior.zoom()
-    .on("zoom",function() {
-        svg.attr("transform","translate("+ 
-            d3.event.translate.join(",")+")scale("+d3.event.scale+")");
-        svg.selectAll("path")  
-            .attr("d", path.projection(projection)); 
-});
+    .translate(projection.translate())
+    .scale(projection.scale())
+    .scaleExtent([height, 8 * height])
+    .on("zoom", zoomed);
 
+function zoomed() {
+  projection.translate(d3.event.translate).scale(d3.event.scale);
+  svg.selectAll("path").attr("d", path);
+  setup();
+}
+	
 svg.call(zoom);
 
 </script>
